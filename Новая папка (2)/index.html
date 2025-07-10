@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Delizio — Заказ десертов и напитков</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    background: #fff5f0;
+    font-family: 'Montserrat', sans-serif;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    width: 100%;
+    background: #ff7e5f;
+    color: white;
+    padding: 1.5rem 0;
+    font-size: 2.8rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-align: center;
+    box-shadow: 0 5px 12px rgba(255,126,95,0.4);
+  }
+  main {
+    width: 100%;
+    max-width: 450px;
+    background: white;
+    margin: 2rem 1rem 3rem;
+    border-radius: 16px;
+    padding: 2rem 2rem 3rem;
+    box-shadow: 0 8px 30px rgba(255,126,95,0.18);
+    animation: fadeInDown 0.9s ease forwards;
+  }
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .step {
+    display: none;
+  }
+  .step.active {
+    display: block;
+  }
+  label {
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #ff7e5f;
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 0.55rem 0.9rem;
+    font-size: 1.1rem;
+    border: 2px solid #feb47b;
+    border-radius: 8px;
+    outline-offset: 2px;
+    transition: border-color 0.3s ease;
+  }
+  input[type="text"]:focus, input[type="number"]:focus {
+    border-color: #ff7e5f;
+  }
+  button {
+    margin-top: 1.7rem;
+    width: 100%;
+    background: #ff7e5f;
+    color: white;
+    border: none;
+    padding: 1.05rem 0;
+    font-weight: 700;
+    font-size: 1.3rem;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(255,126,95,0.5);
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #feb47b;
+  }
+  .menu-list {
+    margin-top: 1rem;
+    max-height: 270px;
+    overflow-y: auto;
+    border: 1px solid #f8c3b1;
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    background: #fff0e8;
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    color: #66332b;
+  }
+  .menu-item:last-child {
+    margin-bottom: 0;
+  }
+  .menu-item input[type="checkbox"] {
+    margin-right: 0.8rem;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+  }
+  .price {
+    margin-left: auto;
+    font-weight: 700;
+    color: #ff7e5f;
+  }
+  .total-price {
+    margin-top: 1rem;
+    text-align: right;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #ff7e5f;
+  }
+  .success-message {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #2f9e44;
+  }
+  .error {
+    border-color: #e03131 !important;
+  }
+  /* Scrollbar for menu */
+  .menu-list::-webkit-scrollbar {
+    width: 6px;
+  }
+  .menu-list::-webkit-scrollbar-thumb {
+    background: #ff7e5f;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body>
+
+<header>Delizio</header>
+
+<main>
+  <section id="step1" class="step active">
+    <label for="userName">Здравствуйте! Как Вас зовут?</label>
+    <input type="text" id="userName" placeholder="Ваше имя" autocomplete="off" />
+    <button id="btnToStep2">Далее</button>
+  </section>
+
+  <section id="step2" class="step">
+    <label for="tableNumber">Введите номер Вашего стола</label>
+    <input type="number" id="tableNumber" min="1" max="99" placeholder="Например, 12" />
+    <button id="btnToStep3">Выбрать блюда</button>
+  </section>
+
+  <section id="step3" class="step">
+    <label>Выберите блюда:</label>
+    <div class="menu-list" id="menuList">
+      <!-- Блюда появятся сюда -->
+    </div>
+    <div class="total-price" id="totalPrice">Итого: 0₽</div>
+    <button id="btnSendOrder">Заказать</button>
+  </section>
+
+  <section id="step4" class="step">
+    <div class="success-message" id="successMsg"></div>
+  </section>
+</main>
+
+<script>
+  // Данные блюд
+  const dishes = [
+    {id: 'dessert1', name: 'Тирамису', price: 950},
+    {id: 'dessert2', name: 'Чизкейк с клубникой', price: 1100},
+    {id: 'dessert3', name: 'Макаронс (5 шт)', price: 750},
+    {id: 'dessert4', name: 'Панкейки с мёдом', price: 850},
+    {id: 'main1', name: 'Лазанья', price: 1800},
+    {id: 'main2', name: 'Плов по-узбекски', price: 1300},
+    {id: 'main3', name: 'Цезарь с курицей', price: 950},
+    {id: 'main4', name: 'Стейк из говядины', price: 2100},
+    {id: 'drink1', name: 'Капучино', price: 450},
+    {id: 'drink2', name: 'Фреш апельсиновый', price: 550},
+    {id: 'drink3', name: 'Минеральная вода', price: 300},
+    {id: 'drink4', name: 'Чай зелёный', price: 400}
+  ];
+
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
+  const step3 = document.getElementById('step3');
+  const step4 = document.getElementById('step4');
+
+  const userNameInput = document.getElementById('userName');
+  const tableNumberInput = document.getElementById('tableNumber');
+  const menuListDiv = document.getElementById('menuList');
+  const totalPriceDiv = document.getElementById('totalPrice');
+  const successMsgDiv = document.getElementById('successMsg');
+
+  const btnToStep2 = document.getElementById('btnToStep2');
+  const btnToStep3 = document.getElementById('btnToStep3');
+  const btnSendOrder = document.getElementById('btnSendOrder');
+
+  // Показать следующий шаг
+  function showStep(stepToShow) {
+    [step1, step2, step3, step4].forEach(step => {
+      step.classList.remove('active');
+    });
+    stepToShow.classList.add('active');
+  }
+
+  // Проверка имени и переход к номеру стола
+  btnToStep2.onclick = () => {
+    const name = userNameInput.value.trim();
+    if(name.length < 2){
+      userNameInput.classList.add('error');
+      setTimeout(() => userNameInput.classList.remove('error'), 1200);
+      return;
+    }
+    showStep(step2);
+  };
+
+  // Проверка номера стола и переход к меню
+  btnToStep3.onclick = () => {
+    const table = tableNumberInput.value.trim();
+    if(!table || isNaN(table) || +table < 1 || +table > 99){
+      tableNumberInput.classList.add('error');
+      setTimeout(() => tableNumberInput.classList.remove('error'), 1200);
+      return;
+    }
+    showStep(step3);
+  };
+
+  // Создаем список блюд
+  function renderMenu(){
+    menuListDiv.innerHTML = '';
+    dishes.forEach(dish => {
+      const div = document.createElement('div');
+      div.classList.add('menu-item');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = dish.id;
+
+      const label = document.createElement('label');
+      label.htmlFor = dish.id;
+      label.textContent = dish.name;
+
+      const priceSpan = document.createElement('span');
+      priceSpan.className = 'price';
+      priceSpan.textContent = dish.price + '₽';
+
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      div.appendChild(priceSpan);
+
+      menuListDiv.appendChild(div);
+
+      checkbox.addEventListener('change', updateTotal);
+    });
+  }
+
+  // Подсчет суммы
+  function updateTotal(){
+    let sum = 0;
+    dishes.forEach(dish => {
+      const el = document.getElementById(dish.id);
+      if(el && el.checked) sum += dish.price;
+    });
+    totalPriceDiv.textContent = `Итого: ${sum}₽`;
+    return sum;
+  }
+
+  // Отправка заказа в Telegram
+  btnSendOrder.onclick = () => {
+    const name = userNameInput.value.trim();
+    const table = tableNumberInput.value.trim();
+
+    const selected = dishes.filter(dish => {
+      const el = document.getElementById(dish.id);
+      return el && el.checked;
+    });
+
+    if(selected.length === 0){
+      alert('Пожалуйста, выберите хотя бы одно блюдо');
+      return;
+    }
+
+    const total = updateTotal();
+
+    let message = `🍽 Новый заказ с Delizio\n\nИмя: ${name}\nСтол: ${table}\n\nБлюда:\n`;
+    selected.forEach(dish => {
+      message += `- ${dish.name} — ${dish.price}₽\n`;
+    });
+    message += `\nИтог: ${total}₽`;
+
+    // Токен и чат айди
+    const token = '7785038610:AAH9HVL2qBJuCEJG6fJKdmD2K3yY77VWT_Q';
+    const chat_id = '82493329';
+
+    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chat_id: chat_id,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.ok){
+        successMsgDiv.textContent = `Спасибо, ${name}! Ваш заказ принят.`;
+        showStep(step4);
+      } else {
+        alert('Ошибка отправки заказа. Попробуйте ещё раз.');
+      }
+    })
+    .catch(() => alert('Ошибка соединения. Проверьте интернет.'));
+  };
+
+  // При загрузке рендерим меню
+  renderMenu();
+</script>
+
+</body>
+</html>
